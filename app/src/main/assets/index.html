@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Summer Afternoon 3D</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+
+    <!-- HUD Overlay Layer -->
+    <div id="ui-layer">
+        <!-- Top status bar -->
+        <div class="top-bar">
+            <div class="top-left-group">
+                <div class="title-pill" id="mood-pill">
+                    <span class="dot"></span>
+                    <span id="mood-title">夏日午后</span>
+                </div>
+                <button class="pill-btn" id="btn-weather" title="点击切换天气 (自动随机循环)">
+                    <span id="weather-icon">☀️</span>
+                    <span id="weather-title">天晴</span>
+                </button>
+                <!-- Character Avatar Pill -->
+                <div class="title-pill character-pill" id="char-pill">
+                    <span id="char-icon">🌾</span>
+                    <span id="char-name">草帽探险家</span>
+                </div>
+            </div>
+
+            <div class="top-buttons">
+                <!-- 8-Bit Music Switcher Button -->
+                <button class="pill-btn music-btn" id="btn-music-track" title="点击切换 8-Bit 音乐">
+                    <span id="music-icon">🎵</span>
+                    <span id="music-title">夏日微风 (8-Bit)</span>
+                </button>
+
+                <!-- Audio Volume Slider -->
+                <div class="volume-pill" title="8-Bit 音量调节">
+                    <span id="vol-icon">🔊</span>
+                    <input type="range" id="volume-slider" min="0" max="100" value="70">
+                </div>
+
+                <!-- Ambient Light Intensity Slider (调节环境光照，告别刺眼太亮) -->
+                <div class="volume-pill light-pill" id="light-pill" title="调节环境光照亮度">
+                    <span id="light-icon">💡</span>
+                    <input type="range" id="light-slider" min="10" max="150" value="75">
+                </div>
+
+                <!-- 3D / 2D (三渲二黑色描边) 风格切换按钮 -->
+                <button class="pill-btn style-btn" id="btn-style" title="切换 3D / 2D三渲二风格">
+                    <span id="style-text">🎨 风格: 3D</span>
+                </button>
+
+                <button class="pill-btn icon-btn" id="btn-time" title="切换时刻">
+                    <span id="time-icon">🌤️</span>
+                </button>
+                <button class="pill-btn icon-btn" id="btn-reset" title="回到起点">
+                    <span>🔄</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Context Hint -->
+        <div class="hint-banner" id="hint-banner">
+            左下角按键操作动作 · 右下角轮盘控制移动 · 靠近动物可骑乘 · 地面武器可拾取
+        </div>
+
+        <!-- Floating Mount/Ride Button (靠近动物时在上方弹出) -->
+        <button class="floating-mount-btn hidden" id="btn-mount" title="骑乘/离开动物">
+            <span class="mount-icon">🏇</span>
+            <span class="mount-text" id="mount-btn-text">骑乘坐骑</span>
+        </button>
+
+        <!-- Telemetry bottom indicator -->
+        <div class="telemetry-badge" id="telemetry-badge">
+            60 FPS · 第三人称跟随 · 8-Bit 旋律
+        </div>
+
+        <!-- ================================================================
+             BOTTOM-LEFT CONTROLS CLUSTER (页面左下角动作按键群：跳跃、拾取、攻击、丢弃、踢球、下蹲、坐下)
+             ================================================================ -->
+        <div class="bottom-left-controls" id="left-controls-group">
+            <!-- 跳跃大按键 -->
+            <div class="floating-jump-zone" id="jump-zone">
+                <button class="primary-jump-btn" id="btn-jump" title="跳跃 (Jump)">
+                    <span class="jump-icon">⬆️</span>
+                    <span class="jump-label">跳跃</span>
+                </button>
+            </div>
+
+            <!-- 动作按键群 (拾取/丢弃武器、攻击、踢球、下蹲、坐下) -->
+            <div class="floating-action-buttons" id="action-buttons-group">
+                <!-- Row 1: 攻击、拾取武器、丢弃、魔法棒拍照贴图 -->
+                <div class="action-buttons-row">
+                    <button class="action-btn btn-attack" id="btn-attack" title="普通/武器攻击">
+                        <span class="btn-icon">⚔️</span>
+                        <span class="btn-text">攻击</span>
+                    </button>
+                    <button class="action-btn btn-pickup" id="btn-pickup" title="拾取附近武器">
+                        <span class="btn-icon">🖐️</span>
+                        <span class="btn-text" id="pickup-btn-text">拾取</span>
+                    </button>
+                    <button class="action-btn btn-drop hidden" id="btn-drop" title="扔掉手中的武器">
+                        <span class="btn-icon">🗑️</span>
+                        <span class="btn-text">扔掉</span>
+                    </button>
+                    <button class="action-btn btn-wand" id="btn-magic-wand" title="魔法棒：碰撞物体后拍照生成低清纹理贴图">
+                        <span class="btn-icon">🪄</span>
+                        <span class="btn-text">魔法棒</span>
+                    </button>
+                </div>
+                <!-- Row 2: 踢球、下蹲、坐下 -->
+                <div class="action-buttons-row">
+                    <button class="action-btn" id="btn-kick" title="踢足球">
+                        <span class="btn-icon">⚽</span>
+                        <span class="btn-text">踢球</span>
+                    </button>
+                    <button class="action-btn btn-crouch" id="btn-crouch" title="下蹲 / 起立">
+                        <span class="btn-icon">⬇️</span>
+                        <span class="btn-text">下蹲</span>
+                    </button>
+                    <button class="action-btn btn-sit" id="btn-sit" title="坐下休息">
+                        <span class="btn-icon">🪑</span>
+                        <span class="btn-text" id="sit-btn-text">坐下</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面右下角：方向操控悬浮轮盘 (Move Joystick) -->
+        <div class="floating-joystick joystick-right" id="joystick-move-zone">
+            <div class="joystick-base" id="joystick-move-base">
+                <span class="arrow-up">▲</span>
+                <span class="arrow-down">▼</span>
+                <span class="arrow-left">◀</span>
+                <span class="arrow-right">▶</span>
+                <div class="joystick-handle" id="joystick-move-handle">🏃</div>
+            </div>
+            <div class="joystick-label">方向 (Move)</div>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         3D MODEL STUDIO MODAL: 骨骼绑定与 Mixamo 预置动作预览窗口
+         ================================================================ -->
+    <div id="model-studio-modal" class="studio-modal hidden">
+        <div class="studio-dialog">
+            <!-- Studio Header -->
+            <div class="studio-header">
+                <div class="studio-title-group">
+                    <span class="studio-icon" id="studio-mode-icon">🦴</span>
+                    <span class="studio-title" id="studio-title">3D 模型骨骼绑定与动作预览</span>
+                    <span class="studio-model-badge" id="studio-model-badge">模型</span>
+                </div>
+                <!-- Studio Tabs -->
+                <div class="studio-tabs" id="studio-tabs-row">
+                    <button class="studio-tab-btn active" id="tab-btn-rig">1. 骨骼对称绑定</button>
+                    <button class="studio-tab-btn" id="tab-btn-preview">2. Mixamo 动作预览</button>
+                </div>
+                <button class="studio-close-btn" id="studio-btn-close">✕</button>
+            </div>
+
+            <!-- Studio Body -->
+            <div class="studio-body">
+                <!-- 3D Canvas Viewport (Dark/Black Background with Grid) -->
+                <div id="studio-canvas-container" class="studio-canvas-container"></div>
+
+                <!-- 1. Rigging Mode Interactive Overlay (骨骼对称放置层) -->
+                <div id="studio-rig-overlay" class="studio-rig-overlay">
+                    <!-- Vertical Symmetry Axis (可手动拖动调整中轴线) -->
+                    <div class="symmetry-axis-line" id="symmetry-axis">
+                        <div class="axis-handle" id="axis-drag-handle">⇹ 对称轴</div>
+                    </div>
+
+                    <!-- Joint Nodes Container (带有颜色的圆圈关节点) -->
+                    <div id="joint-nodes-container" class="joint-nodes-container"></div>
+
+                    <!-- Bottom instructions & Auto-Rig Button -->
+                    <div class="rig-instructions-bar">
+                        <div class="rig-tip-text">💡 拖动右侧关节圆圈，左侧将自动对称放置；对准模型关节后点击绑定</div>
+                        <div class="rig-actions-row">
+                            <button class="studio-btn btn-secondary" id="btn-reset-joints">↺ 恢复预置关节</button>
+                            <button class="studio-btn btn-primary" id="btn-execute-rig">✨ 自动绑定骨骼并预览</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Preview Mode Interactive Overlay (Mixamo 预置动作面板) -->
+                <div id="studio-preview-overlay" class="studio-preview-overlay hidden">
+                    <div class="anim-panel">
+                        <div class="anim-panel-header">
+                            <span class="anim-panel-title">🎬 Mixamo 预置动作库</span>
+                            <span class="anim-panel-subtitle">点击动作即刻试穿</span>
+                        </div>
+                        <div class="anim-buttons-grid" id="anim-buttons-grid">
+                            <button class="anim-btn active" data-anim="walk">🚶 行走 (Walk)</button>
+                            <button class="anim-btn" data-anim="run">🏃 奔跑 (Run)</button>
+                            <button class="anim-btn" data-anim="jump">⬆️ 跳跃 (Jump)</button>
+                            <button class="anim-btn" data-anim="crouch">⬇️ 蹲下 (Crouch)</button>
+                            <button class="anim-btn" data-anim="sit">🪑 坐下 (Sit)</button>
+                            <button class="anim-btn" data-anim="attack">⚔️ 攻击 (Attack)</button>
+                            <button class="anim-btn" data-anim="fall">💫 倒下 (Fall)</button>
+                            <button class="anim-btn" data-anim="stand">🧍 站起 (Stand Up)</button>
+                        </div>
+                    </div>
+
+                    <div class="preview-footer-bar">
+                        <span class="preview-hint-text">🖱️ 触摸滑动 3D 窗口可 360° 旋转观察各角度绑定效果</span>
+                        <div class="preview-actions-row">
+                            <button class="studio-btn btn-secondary" id="btn-back-to-rig">← 调整骨骼</button>
+                            <button class="studio-btn btn-primary" id="btn-apply-to-game">✅ 确认应用到游戏</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Local Bundled Three.js and 3D Loaders (No CDN, 100% Offline) -->
+    <script src="three.min.js"></script>
+    <script src="GLTFLoader.js"></script>
+    <script src="OBJLoader.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

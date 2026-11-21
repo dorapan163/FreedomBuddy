@@ -1,0 +1,931 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #f7d5a5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    touch-action: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    touch-action: none;
+}
+
+#canvas-container canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+}
+
+
+/* ==========================================================================
+   HUD Overlay Layer
+   ========================================================================== */
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+    touch-action: none;
+}
+
+/* Top bar with mood title, music, volume, and actions */
+.top-bar {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(64px, calc(env(safe-area-inset-right) + 48px)); /* Space for native FAB on top-right */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: auto;
+    z-index: 25;
+}
+
+.top-left-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.title-pill {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 18px;
+    padding: 4px 10px;
+    color: #4a3424;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.character-pill {
+    background: rgba(255, 245, 230, 0.88);
+    border-color: rgba(255, 190, 90, 0.8);
+    font-weight: 700;
+    color: #5a3818;
+}
+
+.title-pill .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff9800;
+    box-shadow: 0 0 6px #ff9800;
+}
+
+.top-buttons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pill-btn {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 18px;
+    height: 32px;
+    padding: 0 10px;
+    color: #3b2a1a;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.1s, background 0.2s;
+    outline: none;
+}
+
+.pill-btn:active {
+    transform: scale(0.93);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.music-btn {
+    background: linear-gradient(135deg, rgba(230, 245, 255, 0.95), rgba(200, 230, 255, 0.9));
+    border-color: rgba(100, 180, 255, 0.75);
+    color: #0277bd;
+}
+
+.volume-pill {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 18px;
+    height: 32px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+#vol-icon {
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.volume-pill input[type="range"] {
+    width: 60px;
+    height: 4px;
+    accent-color: #ff9800;
+    cursor: pointer;
+}
+
+.light-pill {
+    background: rgba(255, 252, 235, 0.85);
+    border-color: rgba(255, 215, 0, 0.7);
+}
+
+.light-pill input[type="range"] {
+    width: 55px;
+    accent-color: #fbc02d;
+}
+
+#light-icon {
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* Floating Mount / Ride Button (出现在动物头顶上方或者屏幕中央偏下) */
+.floating-mount-btn {
+    position: fixed;
+    top: 52%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    border: 2.5px solid #fff;
+    color: #fff;
+    border-radius: 24px;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 6px 20px rgba(245, 124, 0, 0.5), inset 0 1px 4px rgba(255, 255, 255, 0.5);
+    z-index: 120;
+    cursor: pointer;
+    animation: mountPulse 1.2s infinite ease-in-out;
+    pointer-events: auto;
+    transition: transform 0.1s, background 0.2s;
+}
+
+.floating-mount-btn.riding {
+    background: linear-gradient(135deg, #e53935, #c62828);
+    box-shadow: 0 6px 20px rgba(229, 57, 53, 0.5);
+    top: auto;
+    bottom: 95px;
+}
+
+.floating-mount-btn:active {
+    transform: translate(-50%, -50%) scale(0.92);
+}
+
+.floating-mount-btn.riding:active {
+    transform: translate(-50%, 0) scale(0.92);
+}
+
+@keyframes mountPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.btn-attack {
+    background: radial-gradient(circle at 35% 35%, rgba(255, 240, 240, 0.96), rgba(255, 205, 210, 0.88));
+    border-color: rgba(239, 83, 80, 0.6);
+    color: #c62828;
+}
+
+.btn-pickup {
+    background: radial-gradient(circle at 35% 35%, rgba(240, 255, 245, 0.96), rgba(200, 245, 215, 0.88));
+    border-color: rgba(76, 175, 80, 0.6);
+    color: #2e7d32;
+}
+
+.btn-drop {
+    background: radial-gradient(circle at 35% 35%, rgba(255, 245, 235, 0.96), rgba(255, 224, 178, 0.88));
+    border-color: rgba(255, 152, 0, 0.6);
+    color: #e65100;
+}
+
+.pill-btn.style-btn {
+    background: linear-gradient(135deg, rgba(255, 235, 180, 0.95), rgba(255, 205, 120, 0.9));
+    border-color: rgba(255, 180, 50, 0.7);
+    color: #4a2800;
+}
+
+.pill-btn.style-btn.style-2d {
+    background: linear-gradient(135deg, #222222, #444444);
+    border-color: #000000;
+    color: #00e5ff;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    padding: 0;
+}
+
+/* Prompt Banner / Context Hint */
+.hint-banner {
+    position: absolute;
+    top: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 20, 10, 0.88);
+    color: #fff;
+    padding: 4px 14px;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+    z-index: 25;
+}
+
+.hint-banner.show {
+    opacity: 1;
+}
+
+/* Telemetry Badge */
+.telemetry-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 10px;
+    padding: 2px 10px;
+    color: #5d4632;
+    font-size: 9px;
+    font-weight: 700;
+    pointer-events: none;
+    letter-spacing: 0.4px;
+    z-index: 15;
+}
+
+/* ==========================================================================
+   INDEPENDENT FLOATING JOYSTICKS & ACTIONS (悬浮于页面上的全直觉轮盘控件)
+   ========================================================================== */
+.floating-joystick {
+    position: fixed;
+    width: 140px;
+    height: 140px;
+    z-index: 100;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-touch-callout: none;
+}
+
+/* 页面右下角方向操控轮盘 (Move Joystick) - 悬浮于页面右下角，醒目明亮 */
+.joystick-right {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    right: max(18px, env(safe-area-inset-right));
+}
+
+.joystick-base {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+/* 右侧方向轮盘：温暖金阳橙质感，醒目立现 */
+.joystick-right .joystick-base {
+    background: radial-gradient(circle, rgba(255, 243, 224, 0.72) 0%, rgba(255, 224, 178, 0.52) 70%, rgba(255, 183, 77, 0.3) 100%);
+    border: 2.5px solid rgba(255, 152, 0, 0.98);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 2px 8px rgba(255, 255, 255, 0.85), 0 0 16px rgba(255, 152, 0, 0.38);
+}
+
+/* 四向指引箭头 (▲ ▼ ◀ ▶) */
+.joystick-base .arrow-up {
+    position: absolute;
+    top: 6px;
+    font-size: 11px;
+    color: rgba(70, 45, 20, 0.75);
+    font-weight: 900;
+}
+.joystick-base .arrow-down {
+    position: absolute;
+    bottom: 6px;
+    font-size: 11px;
+    color: rgba(70, 45, 20, 0.75);
+    font-weight: 900;
+}
+.joystick-base .arrow-left {
+    position: absolute;
+    left: 6px;
+    font-size: 11px;
+    color: rgba(70, 45, 20, 0.75);
+    font-weight: 900;
+}
+.joystick-base .arrow-right {
+    position: absolute;
+    right: 6px;
+    font-size: 11px;
+    color: rgba(70, 45, 20, 0.75);
+    font-weight: 900;
+}
+
+.joystick-handle {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    position: absolute;
+    top: 38px;
+    left: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    transition: transform 0.04s ease-out;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+
+.joystick-right .joystick-handle {
+    background: radial-gradient(circle at 35% 35%, #ffffff, #fff3e0);
+    border: 2.5px solid #f57c00;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), inset 0 -3px 6px rgba(0, 0, 0, 0.12);
+    color: #e65100;
+    z-index: 6;
+}
+
+.joystick-label {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 1px 8px;
+    color: #3e2723;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   BOTTOM-LEFT CONTROLS CLUSTER (跳跃与动作按键群统一位于左下角，触手可及)
+   ========================================================================== */
+.bottom-left-controls {
+    position: fixed;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: max(20px, env(safe-area-inset-left));
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-touch-callout: none;
+}
+
+/* 页面左下角跳跃大按键 */
+.floating-jump-zone {
+    position: relative;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-touch-callout: none;
+}
+
+/* 悬浮动作按键群 (位于左下角跳跃按钮旁) */
+.floating-action-buttons {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    align-items: center;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.action-buttons-row {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.96), rgba(245, 235, 220, 0.82));
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+    transition: transform 0.08s, background 0.1s;
+    outline: none;
+    color: #4a3424;
+}
+
+.action-btn:active, .action-btn.active {
+    transform: scale(0.9);
+    background: radial-gradient(circle at 35% 35%, #ffd285, #f5a623);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(245, 166, 35, 0.4);
+}
+
+.action-btn .btn-icon {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.action-btn .btn-text {
+    font-size: 8px;
+    font-weight: 800;
+    margin-top: 2px;
+    letter-spacing: 0.2px;
+}
+
+.primary-jump-btn {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #fff3e0 40%, #ff9800 100%);
+    border: 3px solid #f57c00;
+    box-shadow: 0 8px 24px rgba(245, 124, 0, 0.45), inset 0 2px 6px rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+    transition: transform 0.08s ease, box-shadow 0.12s ease;
+    outline: none;
+    color: #e65100;
+}
+
+.primary-jump-btn:active, .primary-jump-btn.active {
+    transform: scale(0.92);
+    background: radial-gradient(circle at 35% 35%, #ffa726, #e65100);
+    box-shadow: 0 3px 10px rgba(230, 81, 0, 0.5), inset 0 2px 6px rgba(0, 0, 0, 0.25);
+    color: #fff;
+}
+
+.primary-jump-btn .jump-icon {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.primary-jump-btn .jump-label {
+    font-size: 11px;
+    font-weight: 900;
+    margin-top: 3px;
+    letter-spacing: 0.8px;
+}
+
+.btn-sit {
+    background: radial-gradient(circle at 35% 35%, rgba(220, 245, 230, 0.96), rgba(160, 220, 185, 0.82));
+}
+
+.btn-wand {
+    background: radial-gradient(circle at 35% 35%, rgba(243, 229, 245, 0.96), rgba(206, 147, 216, 0.86));
+    color: #4a148c;
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    opacity: 0.78;
+}
+
+.btn-wand.wand-ready {
+    opacity: 1;
+    background: radial-gradient(circle at 35% 35%, #fff8e1, #ce93d8 60%, #8e24aa 100%);
+    color: #ffffff;
+    border-color: #ffd54f;
+    box-shadow: 0 0 14px rgba(171, 71, 188, 0.75), 0 4px 12px rgba(0, 0, 0, 0.25);
+    transform: scale(1.06);
+}
+
+/* ==========================================================================
+   3D MODEL STUDIO MODAL (骨骼对称绑定 & Mixamo 预置动作预览窗口)
+   ========================================================================== */
+.studio-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.studio-modal.hidden {
+    display: none !important;
+}
+
+.studio-dialog {
+    width: 95vw;
+    max-width: 920px;
+    height: 90vh;
+    background: transparent;
+    border: 1.5px solid #2a2d39;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
+}
+
+.studio-header {
+    height: 46px;
+    background: #181a22;
+    border-bottom: 1px solid #282c3a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    flex-shrink: 0;
+}
+
+.studio-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.studio-title {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.studio-model-badge {
+    background: #252834;
+    border: 1px solid #3c4155;
+    color: #00e5ff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.studio-tabs {
+    display: flex;
+    gap: 6px;
+}
+
+.studio-tab-btn {
+    background: #222530;
+    color: #9aa1b8;
+    border: 1px solid #333849;
+    border-radius: 14px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+}
+
+.studio-tab-btn.active {
+    background: #0288d1;
+    color: #ffffff;
+    border-color: #29b6f6;
+    box-shadow: 0 2px 10px rgba(2, 136, 209, 0.45);
+}
+
+.studio-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #252834;
+    border: 1px solid #3c4155;
+    color: #cfd4e3;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    transition: background 0.15s;
+}
+
+.studio-close-btn:active {
+    background: #ff5252;
+    color: #fff;
+}
+
+.studio-body {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: calc(100% - 46px);
+    background: transparent;
+    overflow: hidden;
+}
+
+.studio-canvas-container {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background: transparent;
+}
+
+.studio-canvas-container canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.studio-rig-overlay,
+.studio-preview-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.studio-rig-overlay.hidden,
+.studio-preview-overlay.hidden {
+    display: none !important;
+}
+
+/* 对称中轴线 (可横向拖曳调整) */
+.symmetry-axis-line {
+    position: absolute;
+    top: 0;
+    bottom: 60px;
+    width: 2px;
+    background: repeating-linear-gradient(to bottom, #00e5ff 0, #00e5ff 8px, transparent 8px, transparent 14px);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+    pointer-events: auto;
+    transform: translateX(-50%);
+    cursor: ew-resize;
+    z-index: 15;
+}
+
+.axis-handle {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #00e5ff;
+    color: #051419;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    cursor: ew-resize;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* 关节点容器与圆圈节点 */
+.joint-nodes-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.joint-node {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 900;
+    color: #ffffff;
+    cursor: grab;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.8), inset 0 0 4px rgba(255, 255, 255, 0.9);
+    border: 2.5px solid #ffffff;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    transition: transform 0.05s ease;
+}
+
+.joint-node:active {
+    transform: translate(-50%, -50%) scale(1.15);
+    cursor: grabbing;
+}
+
+.joint-node.mirrored {
+    border-style: dashed;
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.joint-label {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 12, 16, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 8px;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* 底部操作与提示条 */
+.rig-instructions-bar {
+    position: absolute;
+    bottom: 8px;
+    left: 12px;
+    right: 12px;
+    background: rgba(18, 20, 26, 0.92);
+    border: 1px solid #2e3344;
+    border-radius: 12px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: auto;
+    z-index: 25;
+}
+
+.rig-tip-text {
+    color: #b0b7ce;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.rig-actions-row,
+.preview-actions-row {
+    display: flex;
+    gap: 8px;
+}
+
+.studio-btn {
+    height: 30px;
+    border-radius: 15px;
+    padding: 0 14px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    outline: none;
+    transition: transform 0.08s, opacity 0.12s;
+}
+
+.studio-btn:active {
+    transform: scale(0.94);
+}
+
+.studio-btn.btn-primary {
+    background: linear-gradient(135deg, #00b0ff, #0081cb);
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(0, 176, 255, 0.4);
+}
+
+.studio-btn.btn-secondary {
+    background: #252834;
+    color: #c4cae0;
+    border: 1px solid #3a3f54;
+}
+
+/* 预览动作选择面板 (右上角悬浮) */
+.anim-panel {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 220px;
+    background: rgba(16, 18, 24, 0.92);
+    border: 1px solid #2e3344;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    pointer-events: auto;
+    z-index: 25;
+}
+
+.anim-panel-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 6px;
+}
+
+.anim-panel-title {
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.anim-panel-subtitle {
+    color: #838ba6;
+    font-size: 9px;
+}
+
+.anim-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.anim-btn {
+    background: #222531;
+    border: 1px solid #34394a;
+    border-radius: 8px;
+    color: #c7cde2;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 6px 4px;
+    cursor: pointer;
+    text-align: center;
+    outline: none;
+    transition: all 0.12s ease;
+}
+
+.anim-btn:active {
+    transform: scale(0.94);
+}
+
+.anim-btn.active {
+    background: #ff9800;
+    border-color: #ffb74d;
+    color: #0c0800;
+    font-weight: 900;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.45);
+}
+
+.preview-footer-bar {
+    position: absolute;
+    bottom: 8px;
+    left: 12px;
+    right: 12px;
+    background: rgba(18, 20, 26, 0.92);
+    border: 1px solid #2e3344;
+    border-radius: 12px;
+    padding: 6px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: auto;
+    z-index: 25;
+}
+
+.preview-hint-text {
+    color: #8e96b3;
+    font-size: 10px;
+    font-weight: 600;
+}
+
